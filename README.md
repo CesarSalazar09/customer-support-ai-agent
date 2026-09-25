@@ -56,3 +56,17 @@ Below are the successful execution logs and screenshot evidences for the 6 requi
 ![Test 6: Browser Local CLI](evidences/Test%206%20-%20Browser%20Tool.png)
 
 ![Test 6: Browser AWS Console](evidences/Test%206%20-%20Browser%20Tool%20AWS.png)
+
+
+---
+
+## Project Reflection
+
+### 1. Tool Integration and Implementation Choice
+During the development of this support agent, a fundamental integration was the **MemoryHook**, designed to inject historical context into user queries. A significant technical challenge during its implementation was the inconsistency in the message format of the payload coming from the API; the content sometimes arrived as plain text (`str`) and other times as nested lists of dictionaries. To resolve this at its root, I implemented robust helper functions (`_get_text_content` and `_set_text_content`) that dynamically inspect the data type of the message and safely extract or inject the text, regardless of the initial structure.
+
+### 2. Concrete Challenge and Resolution
+Another critical challenge arose when attempting to deploy the agent from my local environment to AWS. During the cross-compilation for the Linux ARM64 runtime environment, the package manager failed because the Windows-specific dependency `pywin32==312` lacked compatible packages for the target platform (`manylinux_2_28_aarch64`). I resolved this portability blocker by cleaning and strictly managing the requirements file to ensure Linux compatibility, which allowed the packaging and deployment to finish successfully.
+
+### 3. Production Considerations
+From a production environment perspective, a critical consideration is latency management and cost prevention from loops (timeouts). During deployment, I observed that the model attempted to invoke the browser tool multiple consecutive times, causing the request to exceed the strict 29-second timeout limit of the AWS API Gateway and freeze. In a real-world, large-scale deployment, allowing the agent to execute heavy tools without limits would not only generate unacceptable wait times for the customer but also multiply Amazon Bedrock inference costs. To scale this solution safely, it would be essential to implement circuit breakers (retry limiters per tool), adjust system prompts to force a single invocation, and configure alarms in AWS CloudWatch to monitor the duration of external tool calls.
